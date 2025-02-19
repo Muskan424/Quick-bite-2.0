@@ -1,23 +1,24 @@
-
-// Backend for Food Delivery App
-// Using Node.js, Express, and MongoDB
+// Full Backend for Food Delivery App (Without API, Using EJS for SSR)
+// Technologies: Node.js, Express, MongoDB, EJS
 
 const express = require("express");
 const mongoose = require("mongoose");
-const cors = require("cors");
+const bodyParser = require("body-parser");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(express.json());
-app.use(cors());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static("public")); // For CSS, images, etc.
+app.set("view engine", "ejs");
 
-// Connect to MongoDB
+// MongoDB Connection
 mongoose.connect("mongodb://localhost:27017/foodDelivery", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-}).then(() => console.log("MongoDB connected"))
+}).then(() => console.log("MongoDB Connected"))
   .catch(err => console.log(err));
 
 // Food Item Schema
@@ -26,37 +27,34 @@ const FoodSchema = new mongoose.Schema({
     price: Number,
     image: String,
 });
-
 const Food = mongoose.model("Food", FoodSchema);
-
-// Routes
-app.get("/api/foods", async (req, res) => {
-    const foods = await Food.find();
-    res.json(foods);
-});
-
-app.post("/api/foods", async (req, res) => {
-    const { name, price, image } = req.body;
-    const newFood = new Food({ name, price, image });
-    await newFood.save();
-    res.json(newFood);
-});
 
 // Order Schema
 const OrderSchema = new mongoose.Schema({
-    items: Array,
-    totalPrice: Number,
     customerName: String,
     customerEmail: String,
+    items: Array,
+    totalPrice: Number,
 });
-
 const Order = mongoose.model("Order", OrderSchema);
 
-app.post("/api/orders", async (req, res) => {
-    const { items, totalPrice, customerName, customerEmail } = req.body;
-    const newOrder = new Order({ items, totalPrice, customerName, customerEmail });
+// Homepage - Show Available Food Items
+app.get("/", async (req, res) => {
+    const foods = await Food.find();
+    res.render("index", { foods });
+});
+
+// Order Page - Handle Orders
+app.post("/order", async (req, res) => {
+    const { customerName, customerEmail, items, totalPrice } = req.body;
+    const newOrder = new Order({ customerName, customerEmail, items: JSON.parse(items), totalPrice });
     await newOrder.save();
-    res.json({ message: "Order placed successfully" });
+    res.redirect("/thank-you");
+});
+
+// Thank You Page
+app.get("/thank-you", (req, res) => {
+    res.render("thank-you");
 });
 
 // Start Server
