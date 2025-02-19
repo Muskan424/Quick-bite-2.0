@@ -1,18 +1,16 @@
-// Food Delivery Backend with Server-Side Rendering (SSR)
-// Using Node.js, Express, MongoDB, and EJS
+// Backend for Food Delivery App
+// Using Node.js, Express, and MongoDB
 
 const express = require("express");
 const mongoose = require("mongoose");
-const path = require("path");
-const bodyParser = require("body-parser");
+const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public")); // For static files (CSS, images)
-app.set("view engine", "ejs");
+app.use(express.json());
+app.use(cors());
 
 // Connect to MongoDB
 mongoose.connect("mongodb://localhost:27017/foodDelivery", {
@@ -27,7 +25,21 @@ const FoodSchema = new mongoose.Schema({
     price: Number,
     image: String,
 });
+
 const Food = mongoose.model("Food", FoodSchema);
+
+// Routes
+app.get("/api/foods", async (req, res) => {
+    const foods = await Food.find();
+    res.json(foods);
+});
+
+app.post("/api/foods", async (req, res) => {
+    const { name, price, image } = req.body;
+    const newFood = new Food({ name, price, image });
+    await newFood.save();
+    res.json(newFood);
+});
 
 // Order Schema
 const OrderSchema = new mongoose.Schema({
@@ -36,23 +48,14 @@ const OrderSchema = new mongoose.Schema({
     customerName: String,
     customerEmail: String,
 });
+
 const Order = mongoose.model("Order", OrderSchema);
 
-// Routes
-app.get("/", async (req, res) => {
-    const foods = await Food.find();
-    res.render("index", { foods });
-});
-
-app.post("/order", async (req, res) => {
-    const { customerName, customerEmail, items, totalPrice } = req.body;
-    const newOrder = new Order({ customerName, customerEmail, items: JSON.parse(items), totalPrice });
+app.post("/api/orders", async (req, res) => {
+    const { items, totalPrice, customerName, customerEmail } = req.body;
+    const newOrder = new Order({ items, totalPrice, customerName, customerEmail });
     await newOrder.save();
-    res.redirect("/thank-you");
-});
-
-app.get("/thank-you", (req, res) => {
-    res.render("thank-you");
+    res.json({ message: "Order placed successfully" });
 });
 
 // Start Server
