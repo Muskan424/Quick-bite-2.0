@@ -1,4 +1,4 @@
-// Full Backend for Food Delivery App (Without API, Using EJS for SSR)
+// Full Backend for Food Delivery App 
 // Technologies: Node.js, Express, MongoDB, EJS
 
 const express = require("express");
